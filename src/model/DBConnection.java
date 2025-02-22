@@ -1,27 +1,32 @@
 package model;
 
-import java.sql.*;
+import java.sql.CallableStatement;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class DBConnection {
-
-    private static DBConnection instance; // Instancia única de la clase
-    private Connection connexioDB;
-    private String servidor = "jdbc:mysql://192.168.103.50:3306/";
+    private static DBConnection instance;
+    private Connection connection;
+    
+    private String servidor = "jdbc:mysql://192.168.1.100:3306/";
     private String bbdd = "chat";
     private String user = "appuser";
     private String password = "TiC.123456";
 
-    // Constructor privado para evitar instanciación directa
     private DBConnection() {
         try {
-            this.connexioDB = DriverManager.getConnection(this.servidor + this.bbdd, this.user, this.password);
-            System.out.println("Conexión exitosa a la base de datos.");
+            connection = DriverManager.getConnection(servidor + bbdd, user, password);
+            System.out.println("Conexión establecida con la base de datos.");
         } catch (SQLException e) {
-            System.err.println("Mensaje de Error: " + e);
+            e.printStackTrace();
+            System.out.println("Error al conectar con la base de datos.");
         }
     }
 
-    // Método estático para obtener la instancia única
     public static DBConnection getInstance() {
         if (instance == null) {
             instance = new DBConnection();
@@ -29,20 +34,68 @@ public class DBConnection {
         return instance;
     }
 
-    // Método para obtener la conexión a la base de datos
     public Connection getConnection() {
-        return this.connexioDB;
+        return connection;
     }
 
-    // Método para cerrar la conexión
     public void closeConnection() {
-        if (this.connexioDB != null) {
-            try {
-                this.connexioDB.close();
+        try {
+            if (connection != null) {
+                connection.close();
                 System.out.println("Conexión cerrada.");
-            } catch (SQLException e) {
-                System.err.println("Error al cerrar la conexión: " + e);
             }
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
+
+    // Método para ejecutar el procedimiento almacenado "connect"
+    public boolean ejecutarConexion(String userName) {
+        if (connection == null) {
+            System.out.println("No hay conexión a la base de datos.");
+            return false;
+        }
+
+        String query = "{ CALL connect(?) }"; 
+        try (CallableStatement stmt = connection.prepareCall(query)) {
+            stmt.setString(1, userName); 
+            stmt.execute(); 
+            System.out.println("Usuario conectado en la base de datos: " + userName);
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            System.out.println("Error al ejecutar el procedimiento 'connect'.");
+            return false;
+        }
+    }
+    
+    public void desconectar() {
+    	  String query = "{ CALL disconnect() }"; 
+    	  try (CallableStatement stmt = connection.prepareCall(query)) {
+              stmt.execute(); 
+              System.out.println("Desconexión exitosa");
+          } catch (SQLException e) {
+              e.printStackTrace();
+              System.out.println("Error al ejecutar el procedimiento 'disconnect'.");
+          }
+    }
+    
+    public List<String> obtenerUsuariosConectados() {
+        List<String> usuarios = new ArrayList<>();
+        String query = "{ CALL getConnectedUsers() }"; 
+        try (CallableStatement stmt = connection.prepareCall(query);
+             ResultSet rs = stmt.executeQuery()) { 
+
+            while (rs.next()) {
+                usuarios.add(rs.getString("nick"));
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            System.out.println("Error al ejecutar el procedimiento 'getConnectedUsers'.");
+        }
+        return usuarios;
+    }
+
+
 }
