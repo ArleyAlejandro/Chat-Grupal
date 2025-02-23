@@ -136,6 +136,7 @@ public class ChatController {
 
 		if (isSendedMessage) {
 			loadMessages();
+			vista.clearMessageInput();
 		} else {
 			JOptionPane.showMessageDialog(null, "Error al enviar el mensaje.");
 		}
