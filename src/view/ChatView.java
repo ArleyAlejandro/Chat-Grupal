@@ -29,13 +29,17 @@ public class ChatView extends JFrame {
 	private JPanel userList;
 	private DefaultListModel<String> modeloUsuarios;
 	private JList<String> listaUsuarios;
+	
+	private JPanel msgList;
+	private DefaultListModel<String> modeloMessages;
+	private JList<String> listaMessages;
 
 	/**
 	 * Constructor: Configura la ventana principal
 	 */
 	public ChatView() {
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setBounds(100, 100, 450, 600);
+		setBounds(100, 100, 450, 550);
 
 		// Panel principal
 		contentPane = new JPanel();
@@ -54,18 +58,20 @@ public class ChatView extends JFrame {
 		contentPane.add(disconnectButton);
 
 		// Panel de chat
-		JPanel chatBox = new JPanel();
-		chatBox.setBounds(26, 50, 241, 399);
-		chatBox.setBorder(new LineBorder(Color.GRAY, 1));
-		contentPane.add(chatBox);
+		msgList = new JPanel();
+		msgList.setBounds(26, 50, 241, 399);
+		msgList.setBorder(new LineBorder(Color.GRAY, 1));
+		contentPane.add(msgList);
 
+		initializeMessageList();
+		
 		// Lista de usuarios
 		userList = new JPanel();
 		userList.setBounds(289, 50, 133, 399);
 		userList.setBorder(new LineBorder(Color.GRAY, 1));
 		contentPane.add(userList);
 
-		inicializarListaUsuarios();
+		initializeUserList();
 
 		// Panel de entrada de mensajes
 		JPanel msgInput = new JPanel();
@@ -90,49 +96,47 @@ public class ChatView extends JFrame {
 		contentPane.add(textFieldName);
 		textFieldName.setColumns(10);
 
-		// Acción al conectar
-		// Dentro del constructor de MainWindow
-		connectButton.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				String userName = getUser();
-				if (!userName.isEmpty()) {
-					// Llamar al controlador para manejar la conexión
-					if (listener != null) {
-						listener.actionPerformed(new ActionEvent(this, ActionEvent.ACTION_PERFORMED, userName));
-					}
-				} else {
-					System.out.println("Por favor, introduce un nombre.");
-				}
-			}
-		});
-
-		// Acción al enviar mensaje
-		sendButton.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				System.out.println("Mensaje enviado: " + textFieldMsg.getText().trim());
-			}
-		});
 	}
 
 	/**
 	 * Devuelve el nombre de usuario ingresado en el campo de texto
 	 */
-	public String getUser() {
+	public String getUserName() {
 		return textFieldName.getText().trim();
+	}
+	
+	/**
+	 * Devuelve el mensaje ingresado en el campo de texto
+	 */
+	public String getMessage() {
+		return textFieldMsg.getText().trim();
 	}
 
 	/**
 	 * Permite al controlador agregar un listener al botón "Connect"
 	 */
-	public void addConnectListenerConnect(ActionListener listener) {
+	public void addConnectListener(ActionListener listener) {
 		connectButton.addActionListener(listener);
 	}
 
-	public void addConnectListenerDisconnect(ActionListener listener) {
+	/**
+	 * Permite al controlador agregar un listener al botón "Disconnect"
+	 */
+	public void addDisconnectListener(ActionListener listener) {
 		disconnectButton.addActionListener(listener);
 	}
+	
+	/**
+	 * Permite al controlador agregar un listener al botón "Send"
+	 */
+	public void addSendListener(ActionListener listener) {
+		sendButton.addActionListener(listener);
+	}
 
-	private void inicializarListaUsuarios() {
+	/**
+	 * Inicializa la lista de usuarios 
+	 */
+	private void initializeUserList() {
 		modeloUsuarios = new DefaultListModel<>();
 		listaUsuarios = new JList<>(modeloUsuarios);
 
@@ -143,8 +147,32 @@ public class ChatView extends JFrame {
 		userList.add(scrollPane, BorderLayout.CENTER);
 	}
 
-	public DefaultListModel<String> getModeloUsuarios() {
+	/**
+	 * Inicializa la lista de mensajes 
+	 */
+	private void initializeMessageList() {
+		modeloMessages = new DefaultListModel<>();
+		listaMessages = new JList<>(modeloMessages);
+		
+		JScrollPane scrollPane = new JScrollPane(listaMessages);
+		scrollPane.setPreferredSize(new Dimension(200,400));
+		
+		msgList.setLayout(new BorderLayout());
+		msgList.add(scrollPane, BorderLayout.CENTER);
+	}
+	
+	/**
+	 * Devuelve la lista de usuarios
+	 */
+	public DefaultListModel<String> getModelUsers() {
 		return modeloUsuarios;
+	}
+	
+	/**
+	 * Devuelve la lista de mensajes
+	 */
+	public DefaultListModel<String> getModelMessages() {
+		return modeloMessages;
 	}
 
 }

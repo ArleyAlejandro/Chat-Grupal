@@ -1,28 +1,33 @@
 package controller;
 
+import model.ChatModel;
 import model.DBConnection;
+import model.Mensaje;
 import view.ChatView;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.function.Consumer;
 
 import javax.swing.DefaultListModel;
 import javax.swing.JOptionPane;
 
 public class ChatController {
 	private ChatView vista;
-
 	public ChatController(ChatView vista) {
 		this.vista = vista;
 
-		// Agregar el listener al botón "Connect"
-		this.vista.addConnectListenerConnect(new ActionListener() {
+		// Carga de usuarios conectados, al iniciar la app
+		loadUsers();
+
+		// listener al botón "Connect"
+		this.vista.addConnectListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				try {
-					conectarBD();
+					connect();
 				} catch (SQLException e1) {
 					// TODO Auto-generated catch block
 					e1.printStackTrace();
@@ -30,64 +35,109 @@ public class ChatController {
 			}
 		});
 
-		// Listener para desconectar
-		this.vista.addConnectListenerDisconnect(new ActionListener() {
+		// listener al botón "Disconnect"
+		this.vista.addDisconnectListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				try {
-					desconectarBD();
+					disconect();
 				} catch (SQLException e1) {
 					e1.printStackTrace();
 				}
 			}
 		});
+
+		// listener al botón "Send"
+		this.vista.addSendListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				sendMessage();
+			}
+		});
 	}
 
-	private void conectarBD() throws SQLException {
-		String user = vista.getUser();
+	/**
+	 * Método para conectar a la base de datos a partir de un nombre de usuario.
+	 * 
+	 * @throws SQLException
+	 */
+	private void connect() throws SQLException {
 
-		if (user == null || user.trim().isEmpty()) {
+		String userName = vista.getUserName();
+
+		if (userName == null || userName.trim().isEmpty()) {
 			JOptionPane.showMessageDialog(null, "Por favor, ingrese un nombre de usuario.");
 			return;
 		}
 
-		// Obtener la instancia de DBConnection
-		DBConnection dbConnection = DBConnection.getInstance();
+		ChatModel model = new ChatModel();
 
 		// Ejecutar el procedimiento almacenado con el nombre del usuario
-		boolean conexionExitosa = dbConnection.ejecutarConexion(user);
+		boolean succesConnection = model.executeConnection(userName);
 
-		if (conexionExitosa) {
-			JOptionPane.showMessageDialog(null, "Conectado como: " + user);
-			cargarUsuariosConectados();
+		if (succesConnection) {
+			loadMessages();
+			JOptionPane.showMessageDialog(null, "Conectado como: " + userName);
 		} else {
 			JOptionPane.showMessageDialog(null, "Error al conectar con la base de datos.");
 		}
 	}
 
-	private void desconectarBD() throws SQLException {
-		// Obtener la instancia de DBConnection
-		DBConnection dbConnection = DBConnection.getInstance();
-
-		// Ejecutar el procedimiento almacenado para desconectar
-		dbConnection.desconectar();
+	private void disconect() throws SQLException {
+	
+		ChatModel model = new ChatModel();
+		model.disconnect();
 
 		// Llamar a actualizarUsuariosConectados para reflejarlo en la vista
-		DefaultListModel<String> modeloUsuarios = vista.getModeloUsuarios();
-		modeloUsuarios.clear(); 
-		
-		JOptionPane.showMessageDialog(null, "Desconectado de la base de datos.");
+		DefaultListModel<String> userModel = vista.getModelUsers();
+		userModel.clear();
 	}
 
-	public void cargarUsuariosConectados() {
+	public void loadUsers() {
+		
+		ChatModel model = new ChatModel();
 		DBConnection dbConnection = DBConnection.getInstance();
-		List<String> usuarios = dbConnection.obtenerUsuariosConectados();
+		
+		// Recibe los usuarios conectados, desde el modelo.
+		List<String> users = model.getConnectedUsers();
 
-		// Llamar a actualizarUsuariosConectados para reflejarlo en la vista
-		DefaultListModel<String> modeloUsuarios = vista.getModeloUsuarios();
-		modeloUsuarios.clear(); 
-		for (String usuario : usuarios) {
+		// Refleja los usuarios conectados en la vista.
+		DefaultListModel<String> modeloUsuarios = vista.getModelUsers();
+		modeloUsuarios.clear();
+		for (String usuario : users) {
 			modeloUsuarios.addElement(usuario);
+		}
+	}
+
+	public void loadMessages() {
+		ChatModel model = new ChatModel();
+		DBConnection dbConnection = DBConnection.getInstance();
+
+		List<Mensaje> messageList = model.getMessagesFromDB();
+
+		// Actualizar la vista
+		DefaultListModel<String> msgModel = vista.getModelMessages();
+
+		for (Mensaje message : messageList) {
+			msgModel.addElement(message.toString());
+		}
+	}
+
+	public void sendMessage() {
+		String message = vista.getMessage();
+
+		if (message == null || message.trim().isEmpty()) {
+			JOptionPane.showMessageDialog(null, "Por favor, ingrese un mensaje.");
+			return;
+		}
+
+		ChatModel model = new ChatModel();
+		boolean isSendedMessage = model.sendMessage(message);
+
+		if (isSendedMessage) {
+			loadMessages();
+		} else {
+			JOptionPane.showMessageDialog(null, "Error al enviar el mensaje.");
 		}
 	}
 
