@@ -116,7 +116,6 @@ public class ChatModel {
 		try (CallableStatement stmt = connection.prepareCall(query)) {
 			stmt.setString(1, message);
 			stmt.execute();
-			System.out.println("Mensaje enviado a la base de datos: " + message);
 			return true;
 		} catch (SQLException e) {
 			e.printStackTrace();
