@@ -34,8 +34,6 @@ public class ChatModel {
 			stmt.execute();
 			return true;
 		} catch (SQLException e) {
-			e.printStackTrace();
-			System.out.println("Error al ejecutar el procedimiento 'connect'.");
 			return false;
 		}
 	}
